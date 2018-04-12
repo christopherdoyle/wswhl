@@ -3,7 +3,8 @@ from datetime import date, datetime, timedelta
 import numpy as np
 import pandas as pd
 
-from config import grubholes, preferences
+from config import preferences
+import db
 
 
 HISTORY_FILE = r'lunches.history'
@@ -21,13 +22,20 @@ def get_date_window(dt, window_size):
 
 
 def aggregate_preferences(missing=[]):
-    result = defaultdict(list)
-    for name, weights in preferences.items():
-        if name not in missing:
-            for lunch, weight in weights.items():
-                result[lunch].append(weight)
 
-    result = {k: np.mean(v) for k, v in result.items()}
+    # result = defaultdict(list)
+    # for name, weights in preferences.items():
+    #     if name not in missing:
+    #         for lunch, weight in weights.items():
+    #             result[lunch].append(weight)
+
+    # result = {k: np.mean(v) for k, v in result.items()}
+    
+    ratings = db.get_all_ratings()
+    averaged = ratings.groupby('lunchid') \
+                      .aggregate(np.mean) \
+                      .drop('personid', axis=1)
+    result = averaged.to_dict()['rating']
 
     return result
 
@@ -35,30 +43,27 @@ def aggregate_preferences(missing=[]):
 def get_lunch_weightings(lunches):
     weights = aggregate_preferences()
 
-    # TODO combine days since into this weighting
-
-    probs = {k: v for k, v in weights.items() if k in lunches['lunch'].values}
+    probs = {k: v for k, v in weights.items() if k in lunches['id'].values}
     return probs
 
 
 def pick_a_lunch(absentees=[]):
     dt = date.today()
-    history = read_csv(HISTORY_FILE, parse_dates=['date'])
-    available_lunches = [*grubholes]
-    last_week = get_date_window(dt, REPEAT_WINDOW_LIMIT - 1)
-    last_week_idx = history['date'].isin(last_week)
-    last_week_lunches = history.loc[last_week_idx, 'lunch'].values
+    # history = read_csv(HISTORY_FILE, parse_dates=['date'])
+    history = db.get_all_history()
+    # available_lunches = [*grubholes]
+    lunches = db.get_all_lunches()
 
-    lunches = pd.DataFrame({
-        'lunch': [l for l in available_lunches if l not in last_week_lunches]
-        })
-    lunches['last'] = lunches['lunch'].apply(
-            lambda l: max(history['date'].where(history['lunch'] == l))
-            ).fillna(date(1970, 1, 1))
-    lunches['dayssince'] = (dt - lunches['last']).dt.days
+    last_visited = history.groupby('lunchid').agg(max)
+    last_visited.rename(columns={'timestamp': 'last_visited'}, inplace=True)
+    lunches = lunches.join(last_visited, on='id')
+    lunches['last_visited'].fillna(datetime(2018, 1, 1), inplace=True)
+    lunches['dayssince'] = (dt - lunches['last_visited']).dt.days
+
+    lunches = lunches[lunches['dayssince'] >= 7]
 
     weight_map = get_lunch_weightings(lunches)
-    lunches['weight'] = lunches['lunch'].map(weight_map)
+    lunches['weight'] = lunches['id'].map(weight_map)
 
     weight_sd = np.nanstd(lunches['weight'])
     weight_mean = np.nanmean(lunches['weight'])
