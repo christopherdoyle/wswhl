@@ -75,3 +75,27 @@ def set_lunch_eater_rating(personid, lunchid, rating):
         '''.format(l=lunchid, p=personid, r=rating)
         cursor.execute(cmd)
 
+
+def log_lunch(dt, lunchid):
+    with sqlite3.connect(DB_CONN_STR) as conn:
+        cursor = conn.cursor()
+        cmd = '''
+        insert into history
+        (lunchid, timestamp)
+        values
+        ({l}, '{d}')
+        '''.format(l=lunchid, d=dt.strftime('%Y-%m-%d'))
+        cursor.execute(cmd)
+
+
+def lunchid_to_name(lunchid):
+     with sqlite3.connect(DB_CONN_STR) as conn:
+        cursor = conn.cursor()
+        cmd = '''
+        select lunch
+        from lunches
+        where id={l}
+        '''.format(l=lunchid)
+        result = list(cursor.execute(cmd))
+        return result[0][0]
+

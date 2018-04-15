@@ -43,6 +43,13 @@ def get_lunch_weightings(lunches, lunch_eaters):
 def pick_a_lunch(absentees=[]):
     dt = date.today()
     history = db.get_all_history()
+    todays_lunch = history['timestamp'] == dt
+    if todays_lunch.any():
+        print('You have already chosen.')
+        lunchid = history.loc[todays_lunch, 'lunchid'].values[0]
+        print(db.lunchid_to_name(lunchid))
+        return
+
     lunches = db.get_all_lunches()
     lunch_eaters = db.get_all_lunch_eaters()
 
@@ -64,8 +71,9 @@ def pick_a_lunch(absentees=[]):
     # normalize weights to between 0 and 1
     lunches['weight'] /= lunches['weight'].sum()
 
-    draw = np.random.choice(lunches['lunch'], 1, p=lunches['weight'])[0]
-    print(draw)
+    draw = np.random.choice(lunches.index, 1, p=lunches['weight'])[0]
+    print(lunches.loc[draw, 'lunch'])
+    db.log_lunch(dt, lunches.loc[draw, 'id']);
 
 
 def print_last_week():
