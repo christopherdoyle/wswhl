@@ -1,0 +1,97 @@
+$sansserifstack: Helvetica, Arial, sans-serif;
+$serifstack: Garamond, Baskerville, Baskerville Old Face, Hoefler Text, Times New Roman, serif;
+
+
+$maincolor: #3c56c9;
+$midgrey: #666;
+
+
+body {
+    font-family: $sansserifstack;
+    margin: 0 auto;
+    width: 800px;
+}
+
+
+
+/*** Generics ***/
+blockquote {
+    font-family: $serifstack;
+    font-size: 1.2rem;
+    font-style: italic;
+    position: relative;
+
+    &:before {
+        color: rgba(0, 0, 0, 0.3);
+        content: open-quote;
+        font-size: 5em;
+        left: -3.5rem;
+        position: absolute;
+        top: -1.2rem;
+    }
+}
+
+figure {
+    overflow: hidden;
+    position: relative;
+}
+
+figcaption.author-ref {
+    float: right;
+    font-size: 90%;
+
+    &:before {
+        content: '~ ';
+    }
+}
+
+.column {
+    float: left;
+    width: 33.33%;
+}
+
+.row:after {
+    clear: both;
+    content: '';
+    display: table;
+}
+
+
+/*** Header **/
+
+header {
+    border-bottom: 2px solid black;
+    border-top: 4px solid black;
+    margin: 1rem 0 3rem 0;
+
+    h1 {
+        text-align: center;
+    }
+}
+
+
+/** Lunch Form **/
+
+form#lunch-picker {
+
+    fieldset {
+        border: 1px solid $maincolor;
+        margin-right: 5%;
+    }
+
+    legend {
+        border: 1px solid $maincolor;
+        color: $maincolor;
+        font-size: 90%;
+        padding: .2em .5em;
+    }
+
+    input[type='checkbox'] {
+
+        &:disabled + label {
+            color: $midgrey;
+        }
+    }
+
+}
+

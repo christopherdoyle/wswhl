@@ -7,11 +7,52 @@ from luncheater import LunchEater
 DB_CONN_STR = 'example.db'
 
 
+def list_to_sql_clause(some_list):
+    # https://stackoverflow.com/a/283801
+    placeholder = '?'
+    placeholders = ', '.join(placeholder for item in some_list)
+    return placeholders
+
+
 def get_all_lunches():
     with sqlite3.connect(DB_CONN_STR) as conn:
         cmd = '''
         select id, lunch, distance
         from lunches
+        '''
+        df = pd.read_sql(cmd, conn)
+        return df
+
+
+def get_lunches_from_ids(lunch_id_list):
+    with sqlite3.connect(DB_CONN_STR) as conn:
+        cmd = '''
+        select id, lunch, distance
+        from lunches
+        where id in ({lil})
+        '''.format(lil=list_to_sql_clause(lunch_id_list))
+        df = pd.read_sql(cmd, conn, params=lunch_id_list)
+        return df
+
+
+def get_lunches_not_this_week():
+     with sqlite3.connect(DB_CONN_STR) as conn:
+        cmd = '''
+        select
+            id,
+            lunch,
+            (S.last <= date('now', '-7 day') or S.last is null) avail
+        from
+        (
+            select
+                L.id,
+                L.lunch,
+                max(H.timestamp) last
+            from lunches L
+            left join history H
+                on H.lunchid = L.id
+            group by L.lunch, L.id
+        ) S
         '''
         df = pd.read_sql(cmd, conn)
         return df
@@ -92,10 +133,10 @@ def lunchid_to_name(lunchid):
      with sqlite3.connect(DB_CONN_STR) as conn:
         cursor = conn.cursor()
         cmd = '''
-        select lunch
+        select *
         from lunches
         where id={l}
         '''.format(l=lunchid)
-        result = list(cursor.execute(cmd))
-        return result[0][0]
+        df = pd.read_sql(cmd, conn)
+        return df
 

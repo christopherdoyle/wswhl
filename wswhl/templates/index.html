@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <title>Where Shall We Have Lunch?</title>
+    <link rel=stylesheet href="{{ url_for('static', filename='css/normalize.css') }}">
+    <link rel=stylesheet href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+    <div class="container">
+
+        <header>
+            <h1>Where Shall We Have Lunch?</h1>
+            <figure>
+                <blockquote>
+                    The History of every major Galactic Civilization tends to
+                    pass through three distinct and recognizable phases, those
+                    of Survival, Inquiry and Sophistication, otherwise known as
+                    the How, Why, and Where phases. For instance, the first
+                    phase is characterized by the question 'How can we eat?'
+                    the second by the question 'Why do we eat?' and the third
+                    by the question 'Where shall we have lunch?
+                </blockquote>
+                <figcaption class="author-ref">Douglas Adams, The Restaurant at the End of the Universe</figcaption>
+            </figure>
+        </header>
+
+        <div id="main" role="main">
+
+            <form id="lunch-picker" class="row" action="" method="post">
+                <div class="column">
+                    <fieldset>
+                        <legend>Lunch Eaters</legend>
+                        {% for p in people %}
+                        <div>
+                            <input type="checkbox" id="cp_{{ p['dbid'] }}" name="cp_{{ p['dbid'] }}" {% if p['avail'] %} checked {% else %} disabled {% endif %}>
+                            <label for="cp_{{ p['dbid'] }}">{{ p['name'] }}</label>
+                        </div>
+                        {% endfor %}
+                    </fieldset>
+                </div>
+                <div class="column">
+                    <fieldset>
+                        <legend>Lunches</legend>
+                        {% for lunch in lunches %}
+                        <div>
+                            <input type="checkbox" id="cl_{{ lunch['id'] }}" name="cl_{{ lunch['id'] }}" {% if lunch['avail'] %} checked {% else %} disabled {% endif %}>
+                            <label for="cl_{{ lunch['id'] }}">{{ lunch['lunch'] }}</label>
+                        </div>
+                        {% endfor %}
+                    </fieldset>
+                </div>
+                <div class="column">
+                    <button name="pickpick">WSWHL</button>
+                </div>
+            </form>
+
+        </div>
+
+    </div>
+</body>
+
+</html>
+

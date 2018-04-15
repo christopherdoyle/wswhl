@@ -4,6 +4,7 @@ import db
 class LunchEater(object):
 
     def __init__(self, dbid, name):
+        self.avail = True
         self.dbid = dbid
         self.name = name
         self.ratings = db.get_ratings(dbid);

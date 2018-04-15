@@ -34,24 +34,21 @@ def aggregate_preferences(lunch_eaters):
 
 
 def get_lunch_weightings(lunches, lunch_eaters):
-    weights = aggregate_preferences(lunch_eaters)
+    lunch_eaters_attending = [l for l in lunch_eaters if l.avail]
+    weights = aggregate_preferences(lunch_eaters_attending)
 
     probs = {k: v for k, v in weights.items() if k in lunches['id'].values}
     return probs
 
 
-def pick_a_lunch(absentees=[]):
+def pick_a_lunch(lunches, lunch_eaters):
     dt = date.today()
     history = db.get_all_history()
     todays_lunch = history['timestamp'] == dt
     if todays_lunch.any():
         print('You have already chosen.')
         lunchid = history.loc[todays_lunch, 'lunchid'].values[0]
-        print(db.lunchid_to_name(lunchid))
-        return
-
-    lunches = db.get_all_lunches()
-    lunch_eaters = db.get_all_lunch_eaters()
+        return db.lunchid_to_df(lunchid)
 
     last_visited = history.groupby('lunchid').agg(max)
     last_visited.rename(columns={'timestamp': 'last_visited'}, inplace=True)
@@ -72,8 +69,7 @@ def pick_a_lunch(absentees=[]):
     lunches['weight'] /= lunches['weight'].sum()
 
     draw = np.random.choice(lunches.index, 1, p=lunches['weight'])[0]
-    print(lunches.loc[draw, 'lunch'])
-    db.log_lunch(dt, lunches.loc[draw, 'id']);
+    return lunches.loc[draw]
 
 
 def print_last_week():
@@ -85,6 +81,13 @@ def print_last_week():
     print(last_week) 
 
 
+def main():
+    lunches = db.get_all_lunches()
+    lunch_eaters = db.get_all_lunch_eaters()
+    lunch = pick_a_lunch(lunches, lunch_eaters)
+    db.log_lunch(dt, lunch['id']);
+    print(lunch['lunch'])
+
 if __name__ == '__main__':
-    pick_a_lunch()
+    main()
 
