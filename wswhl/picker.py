@@ -3,8 +3,8 @@ from datetime import date, datetime, timedelta
 import numpy as np
 import pandas as pd
 
-from config import preferences
 import db
+import luncheater
 
 
 HISTORY_FILE = r'lunches.history'
@@ -21,27 +21,20 @@ def get_date_window(dt, window_size):
     return window
 
 
-def aggregate_preferences(missing=[]):
-
-    # result = defaultdict(list)
-    # for name, weights in preferences.items():
-    #     if name not in missing:
-    #         for lunch, weight in weights.items():
-    #             result[lunch].append(weight)
-
-    # result = {k: np.mean(v) for k, v in result.items()}
-    
-    ratings = db.get_all_ratings()
-    averaged = ratings.groupby('lunchid') \
-                      .aggregate(np.mean) \
-                      .drop('personid', axis=1)
+def aggregate_preferences(lunch_eaters):
+    # aggregate all lunch eaters' normalized ratings
+    all_ratings = pd.concat(list(map(
+            lambda le: le.get_normalized_ratings(),
+            lunch_eaters)))
+    averaged = all_ratings.groupby('lunchid') \
+                          .aggregate(np.mean)
     result = averaged.to_dict()['rating']
 
     return result
 
 
-def get_lunch_weightings(lunches):
-    weights = aggregate_preferences()
+def get_lunch_weightings(lunches, lunch_eaters):
+    weights = aggregate_preferences(lunch_eaters)
 
     probs = {k: v for k, v in weights.items() if k in lunches['id'].values}
     return probs
@@ -49,20 +42,18 @@ def get_lunch_weightings(lunches):
 
 def pick_a_lunch(absentees=[]):
     dt = date.today()
-    # history = read_csv(HISTORY_FILE, parse_dates=['date'])
     history = db.get_all_history()
-    # available_lunches = [*grubholes]
     lunches = db.get_all_lunches()
+    lunch_eaters = db.get_all_lunch_eaters()
 
     last_visited = history.groupby('lunchid').agg(max)
     last_visited.rename(columns={'timestamp': 'last_visited'}, inplace=True)
     lunches = lunches.join(last_visited, on='id')
     lunches['last_visited'].fillna(datetime(2018, 1, 1), inplace=True)
     lunches['dayssince'] = (dt - lunches['last_visited']).dt.days
-
     lunches = lunches[lunches['dayssince'] >= 7]
 
-    weight_map = get_lunch_weightings(lunches)
+    weight_map = get_lunch_weightings(lunches, lunch_eaters)
     lunches['weight'] = lunches['id'].map(weight_map)
 
     weight_sd = np.nanstd(lunches['weight'])
@@ -70,8 +61,8 @@ def pick_a_lunch(absentees=[]):
     default_value = max(0, weight_mean - (2 * weight_sd))
     lunches['weight'].fillna(default_value, inplace=True)
 
-    lunches['weight'] = lunches['weight'] / lunches['weight'].sum()
-    import pdb; pdb.set_trace()
+    # normalize weights to between 0 and 1
+    lunches['weight'] /= lunches['weight'].sum()
 
     draw = np.random.choice(lunches['lunch'], 1, p=lunches['weight'])[0]
     print(draw)
