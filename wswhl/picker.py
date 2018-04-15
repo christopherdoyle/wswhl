@@ -7,21 +7,11 @@ import db
 import luncheater
 
 
-HISTORY_FILE = r'lunches.history'
-REPEAT_WINDOW_LIMIT = 7
-
-
-def read_csv(f, parse_dates=[]):
-    df = pd.read_csv(f, parse_dates=parse_dates)
-    return df
-
-
-def get_date_window(dt, window_size):
-    window = [dt - timedelta(days=n) for n in range(1,window_size + 1)]
-    return window
-
-
 def aggregate_preferences(lunch_eaters):
+    # TODO currently we normalize all lunches, then strip out the unavailable
+    # lunches over in get_lunch_weightings. Probably more fair to normalize
+    # within the set of valid ratings only.
+
     # aggregate all lunch eaters' normalized ratings
     all_ratings = pd.concat(list(map(
             lambda le: le.get_normalized_ratings(),
@@ -42,6 +32,23 @@ def get_lunch_weightings(lunches, lunch_eaters):
 
 
 def pick_a_lunch(lunches, lunch_eaters):
+    """
+    Answers the question: Where Shall We Have Lunch?
+
+    Arguments:
+        lunches: pd.DataFrame(id, lunch) representing luncheries
+        lunch_eaters: [LunchEater] them who want to eat
+
+    Returns:
+        pd.DataFrame(id, lunch, ... )
+
+    TODO Return an object with a message, lunch name, and lunch id
+    This would allow the print of 'You have already chosen' to be more
+    compatible with e.g. Flask srv
+
+    TODO Where should logging occur? From here or from the calling function?
+    E.g. where does Flask log from?
+    """
     dt = date.today()
     history = db.get_all_history()
     todays_lunch = history['timestamp'] == dt
@@ -65,20 +72,11 @@ def pick_a_lunch(lunches, lunch_eaters):
     default_value = max(0, weight_mean - (2 * weight_sd))
     lunches['weight'].fillna(default_value, inplace=True)
 
-    # normalize weights to between 0 and 1
+    # renormalize weights to between 0 and 1
     lunches['weight'] /= lunches['weight'].sum()
 
     draw = np.random.choice(lunches.index, 1, p=lunches['weight'])[0]
     return lunches.loc[draw]
-
-
-def print_last_week():
-    dt = date.today()
-    history = read_csv(HISTORY_FILE, parse_dates=['date'])
-    last_week = get_date_window(dt, REPEAT_WINDOW_LIMIT - 1)
-    last_week_idx = history['date'].isin(last_week)
-    last_week = history[last_week_idx]
-    print(last_week) 
 
 
 def main():

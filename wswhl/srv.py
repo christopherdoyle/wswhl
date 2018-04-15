@@ -22,6 +22,7 @@ def lunch_app():
     if request.method == 'POST':
         data = request.form
         for p in people:
+            # POST only contains checked boxes
             p.avail = data.get('cp_{}'.format(p.dbid), 'off') == 'on'
 
         lunch_ids = []

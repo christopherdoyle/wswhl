@@ -129,7 +129,7 @@ def log_lunch(dt, lunchid):
         cursor.execute(cmd)
 
 
-def lunchid_to_name(lunchid):
+def lunchid_to_df(lunchid):
      with sqlite3.connect(DB_CONN_STR) as conn:
         cursor = conn.cursor()
         cmd = '''
