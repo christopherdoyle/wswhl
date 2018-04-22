@@ -62,7 +62,7 @@ def pick_a_lunch(lunches, lunch_eaters):
     lunches = lunches.join(last_visited, on='id')
     lunches['last_visited'].fillna(datetime(2018, 1, 1), inplace=True)
     lunches['dayssince'] = (dt - lunches['last_visited']).dt.days
-    lunches = lunches[lunches['dayssince'] >= 7]
+    lunches = lunches[lunches['dayssince'] > dt.weekday()]
 
     weight_map = get_lunch_weightings(lunches, lunch_eaters)
     lunches['weight'] = lunches['id'].map(weight_map)
@@ -83,6 +83,7 @@ def main():
     lunches = db.get_all_lunches()
     lunch_eaters = db.get_all_lunch_eaters()
     lunch = pick_a_lunch(lunches, lunch_eaters)
+    dt = date.today()
     db.log_lunch(dt, lunch['id']);
     print(lunch['lunch'])
 

@@ -14,7 +14,9 @@ class LunchEater(object):
 
     def get_normalized_ratings(self):
         nr = self.ratings.copy()
-        nr['rating'] /= nr['rating'].sum()
+        rmin = nr['rating'].min()
+        rmax = nr['rating'].max()
+        nr['rating'] = (nr['rating'] - rmin) / (rmax - rmin)
         return nr
 
     def set_rating(self, lunchid, value):
